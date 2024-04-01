@@ -462,8 +462,8 @@ const在指针修饰符 \* 左右，效果不一样
 - 被限制后，使用显式转换即可，即手动初始化一个临时对象
 - 或者，static_cast ，显式转换
 - 标准库中的explicit
-    1. string(char*) 不是explicit
-    2. vector<>(int n) 是explicit
+  1. string(char*) 不是explicit
+  1. vector<>(int n) 是explicit
 
 #### 静态成员的声明/定义/使用
 
@@ -472,35 +472,234 @@ const在指针修饰符 \* 左右，效果不一样
 - static函数不能使用this指针
 - 用域运算符访问静态成员和函数
 
-        cout<<class::static_member<<endl;
-        cout<<class::static_member_func()<<endl;
+      cout<<class::static_member<<endl;
+      cout<<class::static_member_func()<<endl;
 
 - 类外定义静态函数不重复static关键字
 
-        class test{
-            static void func();
-        }
-        void test::func(){}
+      class test{
+          static void func();
+      }
+      void test::func(){}
 
 - 不能在类内定义静态数据成员
     > 区分声明和定义
 - 初始化类的静态成员，可以调类的私有函数(甚至不用加域运算符)
 
-        int class::static_member = 10;
-        int class::static_member = init()
+      int class::static_member = 10;
+      int class::static_member = init()
 
 - 定义静态成员函数
 
-        int class::func(){}
+      int class::func(){}
 
 - 静态成员类内初始化
   - 除非有const值
 
-        class test{
-            static int a = 30;     合法
-        }
+      class test{
+          static int a = 30;     合法
+      }
 
 ## C++标准库
 
 ### IO库
 
+#### IO类
+
+- 分类
+  - iostream
+    - 从/向流读写数据
+    > cin就是一个istream对象
+  - fstream
+    - 从/向文件读写数据
+  - sstream
+    - 从/向string读写数据  
+- IO对象不能拷贝或者赋值
+- 流的状态
+  - 状态不正常时，后续所有操作都会失败
+  - ```>>``` 和 ```<<```如果正常，返回流的引用
+    - ```if```和```while```可以判断cin，如果状态正常，是```true```，如果状态不正常是```false```
+    - ```<<```除了可以跟```endl```，还可以跟```flush（刷新缓冲区）```，```ends（输出一个空字符，然后刷新缓冲区）```
+
+#### 文件IO
+
+- C++文件读写
+  - 打开
+
+        fstream fstm;
+        fstream fstm(file_path[,mode]);   //[]为可选
+        fstm.open(file_path[,mode]);
+        fstm.close();
+        fstm.is_open();  //查询状态
+
+        fstm >> i;
+        or
+        fstm << i
+
+  - mode
+    - 要用域作用符::
+    - eg. ```fstream::in```
+      - in      读
+      - out     写
+      - app  append
+      - ate  打开然后定位到文件末尾
+      - trunc  截断文件
+      - binary  二进制方式IO
+
+#### string流
+
+- istringstream 从string读取数据
+- ostringstream 向string写数据
+- ```sstm.str()```返回sstm保存的string
+- ```sstm >> i``` or ```sstm << str```都是可以的，stringstream继承了iostream
+
+## 顺序容器
+
+- 概述
+  - array
+    - 更安全的数组类型
+  - forward_list
+    - 期望与最好的手写单向链表表现相当
+- 选择
+  - 如果必须在中间位置插入元素，可以考虑list，并且完成输入阶段后转成vector
+- insert和emplace
+  - insert是构造-拷贝构造
+    - push_back 同insert
+  - emplace是直接初始化构造
+    - 用emplace代替push和insert
+    - 用emplace_back 代替 push_back
+- iterator
+  - 不能用```<```和```>```，只能判断 ```!=```
+  - cbegin
+    - 获取const iterator（常量指针），如果不修改数据，用这个
+  - rbegin
+    - 做```++```操作会得到上一个元素
+  - 向vector、string、deque插入元素会导致所有iterator失效
+- 容器初始化
+  - 默认构造 ```C c;```
+  - 拷贝构造 ```C c1(c2)``` or ```C c1 = c2 ;```
+  - 列表初始化 ```C c{values}``` or ```C c = {values}```
+  - 用两个迭代器 ```C c(begin,end)``` 指定拷贝范围
+- 赋值
+  - ```c1 = c2``` 做的是拷贝操作
+- swap
+  - ```swap(c1,c2)```
+    - 交换的是两个容器内部的数据结构指针，会很快（除了array
+- vector扩容
+  - 虽然是申请新空间然后赋值，但是一般比list和deque都快
+  - ```reserve()``` 空间不够则申请新的，空间够则不作操作
+- string操作
+  - 搜索 
+    - ```str.find()``` 返回首次出现的下标
+    - 大小写敏感
+  - 比较
+  - ```str.compare()``` 类似C的strcmp()
+  - 数值转换
+    - ```to_string()``` 
+      - 转成字符串，参数可以是任意类型
+    - ```stoi()```     int
+    - ```stoll()```  long long
+    - ```stoull()``` unsigned long long
+    - ```stof()``` float
+    - ```stod()``` double
+    - ```stold()``` long double
+- 适配器adapter
+  - 接受一个容器类型，并让其行为像另一种类型
+    - 约等于逻辑结构，可以在不同物理结构上实现，完成一些功能。而vector，dequeue等，约等于物理结构
+    - stack , queue , priority_queue
+  - 定义
+
+        stack<int> stk();      //创建一个空的
+        stack<int> stk(deq);   //将deq元素拷贝到stk
+        stack<int,vector<int>> stk;  //显式指定基于vector实现
+
+## 泛型算法
+
+- 关键
+  - 泛型算法不会执行容器的操作，只会运行于iterator之上，执行iterator的操作
+  > 不执行容器操作，所以不会改变容器大小，也不会使iterator失效
+- 只读算法
+  - ```find()``` ```accumulate()``` 等
+  - 最好传```cbegin()``` ```cend()```
+  - 不检查写操作
+    - 如单iterator算法，不检查容器是否为空
+    - 要先确保容器不为空再调用
+  - back_inserter
+
+        vector<int> vec;  //空容器
+        auto ite = back_inserter(vec); //插入迭代器
+        *ite = 42; //向插入迭代器赋值，会在vec后插入一个元素
+
+  - unique
+
+        auto unq_ite = unique(vec.begin(),vec.end());
+        //返回一个iterator，指向不重复序列尾后元素，从unq_ite到end()是重复的元素
+        //然后erase 或者 resize
+
+  - sort()的comp()函数
+    - 如果是类成员，要写成static
+    - 传参尽量用引用
+    - 传comp不带括号（传的是函数指针
+- lambda表达式
+  - 尾置返回类型（返回类型在参数列表后面 ```-> return_type```
+  - 返回值类型可以推断
+        
+        auto f = 
+        [sz](string a,string b){
+        //[]是捕获列表，使用当前大括号内的局部变量
+        //必须明确指明才能使用
+            return a.size()<b.size();  
+            or return sz.size()<b.size();  
+            //两个都合法
+        };
+
+        auto lambda = 
+        [](int x, int y) -> double 
+        { return x + y; };
+        //捕获列表为空，传入xy，显式指定返回类型为double
+        //前面的auto可以写成别的，但很麻烦，写auto即可
+
+  - 值捕获和引用捕获
+    - 捕获相当于新建一个同名临时变量，然后传参赋值
+    - 如果是临时变量，就是值拷贝，后续修改不会影响lambda
+    - 如果是引用，后续修改会影响lambda读到的值
+    > 保持捕获简单化
+  - 隐式捕获
+    - 让编译器自己对应变量名，如果参数列表和大括号没声明，则去表达式所在大括号找
+    - [=]和[&] 分别是值捕获和引用捕获
+  - 可变lambda
+
+        auto f =
+        [v1]() mutable {
+            ++v1;
+        };
+        //显式说明mutable，就可以修改捕获的变量了
+        //如果传值，修改的是副本
+        //如果传引用，修改的是变量本身
+- bind
+  - 作用：函数适配器
+  - 可以接收无限参数，但是只处理定义过的参数，即用占位符 ```_1 , _2```定义的参数
+
+        auto g = bind(f,a,b,_2,c,_1);
+        /*
+        g(p1,p2);
+        等价于
+        f(a,b,p2,c,p1);
+        */
+  - placeholders
+    - _n定义在namespace placeholder中
+    - 要么```using namespace placeholders```，要么```placeholders::_1```
+  - 用来调换参数顺序
+    - ```auto g = bind(f,_2,_1)``` 
+    - ```g(a,b)``` = ```f(b,a)```
+    - 用这种例子可以轻松把comp的方向调转，而不用写两个函数
+  - bind使用引用
+    - 库函数ref()
+    - ```auto f = bind(print,ref(os),_1)```
+    > 这样print才能拿到os的引用
+- 迭代器
+  - 插入迭代器
+    - back_inserter  -> push_back
+    - front_inserter -> push_front
+    - inserter -> insert
+      - 容器必须有对应的操作，才可以创建对应迭代器
